@@ -1,0 +1,156 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disaster Management & Hazard Intelligence Platform | GeoShield</title>
+  <meta name="description" content="AI-Powered Hazard Intelligence, Disaster Awareness, and Multi-Hazard Early Warning Platform for Citizens and Authorities.">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/login.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+</head>
+<body class="login-page">
+
+  <!-- Ambient Glow & Orbs -->
+  <div class="login-bg"></div>
+  <div class="login-orb login-orb-1"></div>
+  <div class="login-orb login-orb-2"></div>
+  <div class="login-orb login-orb-3"></div>
+  <div class="login-grid"></div>
+
+  <div class="login-content">
+    <!-- Header / Brand -->
+    <header class="login-header">
+      <div class="login-logo">
+        <div class="login-logo-icon">🛡️</div>
+        <div class="login-logo-text">
+          <div class="app-name">GeoShield AI</div>
+          <div class="app-sub">Disaster Management & Hazard Intelligence Platform</div>
+        </div>
+      </div>
+      <p class="login-tagline">
+        Real-time multi-hazard monitoring, precision predictive risk mapping, and dynamic evacuation intelligence protecting vulnerable communities.
+      </p>
+    </header>
+
+    <!-- Portal Selection Cards -->
+    <div class="login-cards">
+      <!-- Citizen Card -->
+      <div class="login-card citizen-card">
+        <div class="card-icon-wrap">🧑‍💼</div>
+        <h2 class="card-title">Citizen & Community Portal</h2>
+        <p class="card-desc">
+          Instant GIS risk visualization, safe evacuation paths, nearest relief shelters, and live verified alert updates for you and your family.
+        </p>
+
+        <form id="citizen-login-form" onsubmit="handleLogin(event, 'citizen.html')">
+          <div class="form-group">
+            <label class="form-label">Location / Phone / Citizen ID</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📍</span>
+              <input type="text" class="input-field" placeholder="e.g. Surat, Gujarat or +91..." value="Surat Coastal Zone, GJ" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Access Mode</label>
+            <div class="input-with-icon">
+              <span class="input-icon">⚡</span>
+              <input type="text" class="input-field" value="One-Touch Emergency Access" readonly>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-citizen" id="citizen-submit-btn">
+            <span>Enter Citizen GIS Interface</span>
+            <span>➔</span>
+          </button>
+        </form>
+
+        <div class="feature-tags">
+          <span class="feature-tag">🟢 Safe Zones</span>
+          <span class="feature-tag">🔴 Red Zone Alerts</span>
+          <span class="feature-tag">🚶 Evacuation Routes</span>
+          <span class="feature-tag">📢 Crowd Reports</span>
+        </div>
+      </div>
+
+      <!-- Authority Card -->
+      <div class="login-card authority-card">
+        <div class="card-icon-wrap">🏛️</div>
+        <h2 class="card-title">Authority Command Center</h2>
+        <p class="card-desc">
+          Integrated operational dashboard for disaster officers, emergency responders, risk analysts, and regional administration.
+        </p>
+
+        <form id="authority-login-form" onsubmit="handleLogin(event, 'authority.html')">
+          <div class="form-group">
+            <label class="form-label">Officer Credentials / Service ID</label>
+            <div class="input-with-icon">
+              <span class="input-icon">👤</span>
+              <input type="text" class="input-field" placeholder="NDRF / SDMA / Officer ID" value="officer.vayu@sdma.gov.in" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Security Clearance Code</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔒</span>
+              <input type="password" class="input-field" placeholder="••••••••" value="HazAlert@2026" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-authority" id="authority-submit-btn">
+            <span>Launch Authority Operations</span>
+            <span>➔</span>
+          </button>
+        </form>
+
+        <div class="feature-tags">
+          <span class="feature-tag">🛰️ Multi-Source Fusion</span>
+          <span class="feature-tag">🧠 AI Threat Engine</span>
+          <span class="feature-tag">📊 Vulnerability Profiles</span>
+          <span class="feature-tag">✅ Officer Verification</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live System Telemetry Strip -->
+    <div class="login-status-strip glass-sm" style="padding: 12px 24px; border-radius: var(--radius-full);">
+      <div class="status-item">
+        <span class="pulse-dot red"></span>
+        <span>Active Threats: <strong class="count">5 Monitored</strong></span>
+      </div>
+      <div class="status-sep"></div>
+      <div class="status-item">
+        <span class="risk-dot orange"></span>
+        <span>High-Risk Habitations: <strong class="count">24 Zones</strong></span>
+      </div>
+      <div class="status-sep"></div>
+      <div class="status-item">
+        <span class="risk-dot green"></span>
+        <span>Shelter Capacity Available: <strong class="count">26,000 Persons</strong></span>
+      </div>
+      <div class="status-sep"></div>
+      <div class="status-item">
+        <span>AI Engine Accuracy: <strong class="count" style="color: #38bdf8;">94.6% Confidence</strong></span>
+      </div>
+    </div>
+
+    <footer class="login-footer">
+      Disaster Management & Hazard Intelligence Platform (NDRF, CWC, IMD, GSI Satellite Data Fusion) &bull; v1.0
+    </footer>
+  </div>
+
+  <script>
+    function handleLogin(e, destination) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.classList.add('btn-loading');
+      btn.style.opacity = '0.8';
+      setTimeout(() => {
+        window.location.href = destination;
+      }, 700);
+    }
+  </script>
+</body>
+</html>
