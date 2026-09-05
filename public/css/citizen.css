@@ -1,0 +1,777 @@
+﻿/* ================================================================
+   CITIZEN.CSS — Windy-Inspired Ultra-Clean UI
+   ================================================================ */
+
+.citizen-page {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: #060911;
+  font-family: var(--font-base);
+  color: #f1f5f9;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #080c16;
+}
+
+/* ================================================================
+   1. TOP FLOATING WINDY SEARCH & STATUS PILL
+   ================================================================ */
+.windy-topbar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.windy-topbar > * {
+  pointer-events: all;
+}
+
+/* Left Brand Badge */
+.windy-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(13, 20, 33, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.windy-brand:hover {
+  background: rgba(13, 20, 33, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.windy-logo-icon {
+  font-size: 16px;
+}
+.windy-logo-text {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #f1f5f9;
+}
+.windy-badge-live {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+
+/* Center Search Pill */
+.windy-search-pill {
+  flex: 1;
+  max-width: 440px;
+  position: relative;
+}
+.windy-search-input {
+  width: 100%;
+  height: 42px;
+  background: rgba(13, 20, 33, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-full);
+  padding: 0 42px 0 40px;
+  font-size: 13px;
+  font-family: var(--font-base);
+  color: #f1f5f9;
+  outline: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  transition: all var(--transition-fast);
+}
+.windy-search-input::placeholder {
+  color: #64748b;
+}
+.windy-search-input:focus {
+  background: rgba(13, 20, 33, 0.96);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 4px 24px rgba(59, 130, 246, 0.25);
+}
+.windy-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 14px;
+  pointer-events: none;
+}
+.windy-search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  display: none;
+}
+
+/* Instant Search Results Dropdown */
+.windy-search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: rgba(13, 20, 33, 0.95);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 30;
+}
+.windy-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.windy-search-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.windy-search-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.windy-search-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.windy-search-item-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Right Location & Hazard Chip */
+.windy-loc-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(13, 20, 33, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 14px 6px 12px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+.windy-loc-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.windy-loc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 8px #3b82f6;
+}
+.windy-loc-weather {
+  font-size: 12px;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255,255,255,0.12);
+}
+.windy-risk-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.windy-risk-chip.red {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* ================================================================
+   2. RIGHT VERTICAL LAYER DOCK (Windy's Hallmark)
+   ================================================================ */
+.windy-layer-dock {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(13, 20, 33, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 8px 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.windy-dock-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 58px;
+  height: 52px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+.windy-dock-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+.windy-dock-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #38bdf8;
+}
+.windy-dock-btn.active::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+}
+.windy-dock-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.windy-dock-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+
+/* ================================================================
+   3. BOTTOM TIMELINE FORECAST BAR (Windy Time Slider)
+   ================================================================ */
+.windy-timeline {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: calc(100% - 180px);
+  max-width: 680px;
+  background: rgba(13, 20, 33, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-full);
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.45);
+  transition: all 0.3s ease;
+}
+
+.windy-play-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
+  transition: all var(--transition-fast);
+}
+.windy-play-btn:hover {
+  transform: scale(1.06);
+}
+
+.windy-timeline-steps {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+}
+.windy-timeline-track {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+.windy-timeline-progress {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 0%;
+  height: 3px;
+  background: #3b82f6;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  transition: width 0.3s ease;
+}
+
+.windy-time-node {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.windy-node-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #475569;
+  border: 2px solid #0d1421;
+  transition: all var(--transition-fast);
+}
+.windy-time-node.active .windy-node-dot {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  transform: scale(1.3);
+}
+.windy-node-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.windy-time-node.active .windy-node-text {
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+/* ================================================================
+   4. LEFT FLOATING QUICK CONTROLS
+   ================================================================ */
+.windy-left-controls {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.windy-tool-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(13, 20, 33, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  transition: all var(--transition-fast);
+  position: relative;
+  text-decoration: none;
+}
+.windy-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  transform: translateX(2px);
+}
+.windy-tool-btn.highlight {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+.windy-tool-btn.highlight:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+/* Tooltip */
+.windy-tooltip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(13, 20, 33, 0.95);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+.windy-tool-btn:hover .windy-tooltip {
+  opacity: 1;
+}
+
+/* ================================================================
+   5. WINDY-STYLE CLICK INSPECTOR CARD
+   ================================================================ */
+.windy-inspector {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  z-index: 25;
+  width: 280px;
+  background: rgba(13, 20, 33, 0.92);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  display: none;
+  animation: slideUp 0.3s ease both;
+}
+.windy-inspector.active {
+  display: block;
+}
+.windy-inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.windy-inspector-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.windy-inspector-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 18px;
+  cursor: pointer;
+}
+.windy-inspector-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+}
+.windy-inspector-stat {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.windy-stat-lbl {
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+.windy-stat-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-top: 2px;
+}
+.windy-evac-btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  border: none;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+.windy-evac-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
+}
+
+/* ================================================================
+   6. WINDY COLOR SCALE / LEGEND (Bottom Right)
+   ================================================================ */
+.windy-scale-legend {
+  position: absolute;
+  bottom: 24px;
+  right: 14px;
+  z-index: 20;
+  background: rgba(13, 20, 33, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.windy-scale-bar {
+  width: 90px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #22c55e 0%, #eab308 35%, #f97316 65%, #ef4444 100%);
+}
+.windy-scale-labels {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+.windy-scale-safe { color: #22c55e; }
+.windy-scale-crit { color: #ef4444; }
+
+/* Clean Leaflet Zoom */
+.leaflet-bottom.leaflet-right {
+  bottom: 60px !important;
+  right: 14px !important;
+}
+
+/* ================================================================
+   HAZARD-SPECIFIC INTELLIGENCE UI
+   ================================================================ */
+.hazard-picker {
+  position: absolute;
+  top: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 22;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 28px);
+}
+.hazard-picker-hint {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  background: rgba(13,20,33,0.8);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.hazard-chips {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(13,20,33,0.86);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45);
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+.hazard-chips::-webkit-scrollbar { display: none; }
+.hazard-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-base);
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.hazard-chip:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.hazard-chip.active {
+  background: linear-gradient(135deg, #ff1f3d, #ff7a18);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255,45,70,0.45);
+}
+
+/* Intel panel */
+.intel-panel {
+  position: absolute;
+  top: 132px;
+  right: 14px;
+  width: 306px;
+  max-height: calc(100vh - 250px);
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(9,14,25,0.9);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.intel-panel.hidden { opacity: 0; pointer-events: none; transform: translateX(16px); }
+.intel-head { display: flex; align-items: flex-start; justify-content: space-between; }
+.intel-title { display: flex; align-items: center; gap: 10px; }
+.intel-icon { font-size: 24px; }
+.intel-name { font-size: 16px; font-weight: 800; color: #f8fafc; }
+.intel-sub { font-size: 11px; color: #94a3b8; }
+.intel-collapse {
+  background: rgba(255,255,255,0.08); border: none; color: #cbd5e1;
+  width: 24px; height: 24px; border-radius: 8px; cursor: pointer; font-size: 15px; line-height: 1;
+}
+.intel-summary { font-size: 12px; line-height: 1.55; color: #cbd5e1; margin: 0; }
+.intel-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.intel-stat {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 8px 6px; text-align: center;
+}
+.intel-stat-val { font-size: 15px; font-weight: 800; color: #f8fafc; }
+.intel-stat-lbl { font-size: 9.5px; color: #94a3b8; margin-top: 2px; }
+.intel-tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 10px; }
+.intel-tab {
+  flex: 1; background: transparent; border: none; color: #94a3b8;
+  font-size: 11px; font-weight: 700; font-family: var(--font-base);
+  padding: 6px 4px; border-radius: 8px; cursor: pointer;
+}
+.intel-tab.active { background: rgba(255,255,255,0.14); color: #fff; }
+.intel-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; max-height: 220px; }
+.intel-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  border-left: 3px solid #64748b; border-radius: 10px; cursor: pointer;
+  transition: background 0.15s ease;
+}
+.intel-item:hover { background: rgba(255,255,255,0.09); }
+.intel-item-name { font-size: 12px; font-weight: 700; color: #f1f5f9; }
+.intel-item-sub { font-size: 10.5px; color: #94a3b8; margin-top: 1px; }
+.intel-cta {
+  width: 100%; padding: 10px; border: none; border-radius: 12px; cursor: pointer;
+  font-size: 12.5px; font-weight: 800; color: #fff; font-family: var(--font-base);
+  background: linear-gradient(135deg, #ff1f3d, #ff7a18);
+  box-shadow: 0 6px 18px rgba(255,45,70,0.4);
+}
+.intel-reopen {
+  position: absolute; top: 132px; right: 14px; z-index: 21;
+  width: 42px; height: 42px; border-radius: 12px; cursor: pointer; display: none;
+  background: rgba(9,14,25,0.9); border: 1px solid rgba(255,255,255,0.12);
+  font-size: 18px; color: #f1f5f9; box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+}
+.intel-reopen.show { display: block; }
+
+/* Legend */
+.legend-card {
+  position: absolute; bottom: 96px; left: 14px; z-index: 21;
+  padding: 12px 14px; border-radius: 14px;
+  background: rgba(9,14,25,0.9); backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #e2e8f0; font-weight: 600; }
+.legend-swatch { width: 12px; height: 12px; border-radius: 4px; box-shadow: 0 0 8px currentColor; }
+.legend-sep { height: 1px; background: rgba(255,255,255,0.1); margin: 3px 0; }
+.legend-toggles { display: flex; flex-direction: column; gap: 4px; }
+.legend-toggles label { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #94a3b8; cursor: pointer; }
+.legend-toggles input { accent-color: #ff7a18; }
+
+/* Map pins */
+.alert-pin {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--pin); color: #fff; font-weight: 900; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 0 var(--pin);
+  animation: pin-pulse 1.8s ease-out infinite;
+}
+@keyframes pin-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
+  70% { box-shadow: 0 0 0 14px rgba(255,255,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+.history-pin {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(9,14,25,0.9); border: 2px dashed #ffd400; color: #ffe45c;
+  font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .intel-panel { top: auto; bottom: 150px; right: 10px; left: 10px; width: auto; max-height: 46vh; }
+  .intel-reopen { top: auto; bottom: 150px; right: 10px; }
+  .legend-card { bottom: auto; top: 128px; left: 10px; padding: 10px; }
+  .hazard-picker { top: 62px; }
+}

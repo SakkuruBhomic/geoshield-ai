@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoShield | Hazard Intelligence Map</title>
+  <meta name="description" content="Pick a hazard and instantly see red zones, safe zones, live alerts, past disasters and affected villages on one clean map.">
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/citizen.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+</head>
+<body class="citizen-page">
+
+  <div id="map"></div>
+
+  <!-- ================= TOP BAR ================= -->
+  <header class="windy-topbar" id="windy-topbar">
+    <div class="windy-brand" onclick="window.location.href='index.html'" title="Return to Portal Gateway">
+      <span class="windy-logo-icon">🛡️</span>
+      <span class="windy-logo-text">GeoShield</span>
+      <span class="windy-badge-live">LIVE</span>
+    </div>
+
+    <div class="windy-search-pill">
+      <span class="windy-search-icon">🔍</span>
+      <input type="text" id="windy-search" class="windy-search-input" placeholder="Search a city, district or zone…" autocomplete="off">
+      <button id="windy-search-clear" class="windy-search-clear">&times;</button>
+      <div id="windy-search-dropdown" class="windy-search-dropdown"></div>
+    </div>
+
+    <div class="windy-loc-chip" id="windy-current-loc-chip">
+      <div class="windy-loc-info">
+        <span class="windy-loc-dot"></span>
+        <span id="chip-city">Surat, GJ</span>
+      </div>
+      <div class="windy-loc-weather">
+        <span id="chip-icon">⛈️</span>
+        <span id="chip-temp">34°C</span>
+        <span style="color:#94a3b8; font-size:11px;" id="chip-wind">85 km/h</span>
+      </div>
+      <div class="windy-risk-chip red" id="chip-risk">RED ZONE</div>
+    </div>
+
+    <!-- Firebase Live Database Indicator -->
+    <button id="firebase-live-badge" onclick="openFirebaseModal()" class="windy-tool-btn" style="margin-left:auto; border: 1px solid rgba(18,214,125,0.4); border-radius: 20px; font-size: 11px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; background: rgba(9,14,25,0.85); color: #12d67d; font-weight:600; white-space:nowrap;" title="Live Firebase Database Status. Click to configure.">
+      <span style="font-size:10px;">🟢</span> <span>Firebase Live</span>
+    </button>
+  </header>
+
+  <!-- High-Priority Live Emergency Broadcast Banner -->
+  <div id="citizen-emergency-banner" style="display:none; position:fixed; top:65px; left:50%; transform:translateX(-50%); z-index:9998; width:92%; max-width:820px; background:linear-gradient(135deg, rgba(239,68,68,0.95), rgba(185,28,28,0.95)); color:#fff; border-radius:12px; padding:12px 18px; box-shadow:0 15px 35px rgba(239,68,68,0.4), 0 0 25px rgba(239,68,68,0.3); border:1px solid rgba(255,255,255,0.3); backdrop-filter:blur(10px); animation:pulse 2s infinite;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:26px; animation:bounce 1s infinite;">🚨</span>
+        <div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; font-weight:800; color:#fecaca;">Live National Emergency Warning</div>
+          <div id="cit-banner-title" style="font-size:14px; font-weight:700; margin-top:1px;">Immediate Flood Surge Warning for Coastal Sectors</div>
+          <div id="cit-banner-msg" style="font-size:12px; opacity:0.95; margin-top:2px;">Evacuate low-lying riverbanks immediately. Relief shelters activated.</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('citizen-emergency-banner').style.display='none'" style="background:rgba(0,0,0,0.25); border:none; color:#fff; width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:14px; font-weight:bold; display:flex; align-items:center; justify-content:center;">&times;</button>
+    </div>
+  </div>
+
+  <!-- ================= HAZARD PICKER (top, single-select) ================= -->
+  <div class="hazard-picker" id="hazard-picker">
+    <span class="hazard-picker-hint">Choose a hazard</span>
+    <div class="hazard-chips">
+      <button class="hazard-chip active" data-hazard="cyclone"><span>🌀</span>Cyclone</button>
+      <button class="hazard-chip" data-hazard="flood"><span>🌊</span>Flood</button>
+      <button class="hazard-chip" data-hazard="landslide"><span>⛰️</span>Landslide</button>
+      <button class="hazard-chip" data-hazard="earthquake"><span>📳</span>Earthquake</button>
+      <button class="hazard-chip" data-hazard="tsunami"><span>🌊</span>Tsunami</button>
+      <button class="hazard-chip" data-hazard="cloudburst"><span>⛈️</span>Cloudburst</button>
+      <button class="hazard-chip" data-hazard="erosion"><span>🏝️</span>Coastal Erosion</button>
+    </div>
+  </div>
+
+  <!-- ================= HAZARD INTEL PANEL ================= -->
+  <aside class="intel-panel" id="intel-panel">
+    <div class="intel-head">
+      <div class="intel-title">
+        <span class="intel-icon" id="intel-icon">🌀</span>
+        <div>
+          <div class="intel-name" id="intel-name">Cyclone</div>
+          <div class="intel-sub" id="intel-sub">Live hazard intelligence</div>
+        </div>
+      </div>
+      <button class="intel-collapse" id="intel-collapse" title="Hide panel">−</button>
+    </div>
+
+    <p class="intel-summary" id="intel-summary"></p>
+
+    <div class="intel-stats">
+      <div class="intel-stat"><div class="intel-stat-val" id="stat-red">0</div><div class="intel-stat-lbl">Red zones</div></div>
+      <div class="intel-stat"><div class="intel-stat-val" id="stat-people">0</div><div class="intel-stat-lbl">People at risk</div></div>
+      <div class="intel-stat"><div class="intel-stat-val" id="stat-shelter">0</div><div class="intel-stat-lbl">Shelter spaces</div></div>
+    </div>
+
+    <div class="intel-tabs">
+      <button class="intel-tab active" data-tab="alerts">Alerts</button>
+      <button class="intel-tab" data-tab="history">Past events</button>
+      <button class="intel-tab" data-tab="villages">Villages</button>
+    </div>
+
+    <div class="intel-list" id="intel-list"></div>
+
+    <button class="intel-cta" id="intel-focus-btn">Zoom to the danger area</button>
+  </aside>
+
+  <button class="intel-reopen" id="intel-reopen" title="Show hazard details">📋</button>
+
+  <!-- ================= LEFT TOOLS ================= -->
+  <nav class="windy-left-controls">
+    <button class="windy-tool-btn" id="tool-home"><span>🏠</span><span class="windy-tooltip">Whole country</span></button>
+    <button class="windy-tool-btn" id="tool-locate"><span>📍</span><span class="windy-tooltip">My location</span></button>
+    <button class="windy-tool-btn highlight" id="tool-shelter" style="background:rgba(18,214,125,0.18); border-color:rgba(18,214,125,0.4); color:#7cf3b6;"><span>🛡️</span><span class="windy-tooltip">Nearest safe place</span></button>
+    <button class="windy-tool-btn highlight" id="tool-report"><span>📢</span><span class="windy-tooltip">Report a problem</span></button>
+    <button class="windy-tool-btn" id="tool-basemap"><span>🛰️</span><span class="windy-tooltip">Satellite view</span></button>
+    <a href="authority.html" class="windy-tool-btn" style="color:#60a5fa;"><span>🏛️</span><span class="windy-tooltip">Authority mode</span></a>
+  </nav>
+
+  <!-- ================= LEGEND + WHAT TO SHOW ================= -->
+  <div class="legend-card" id="legend-card">
+    <div class="legend-row"><span class="legend-swatch" style="background:#ff1f3d"></span>Very high risk — Red Zone</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#ff7a18"></span>High risk</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#ffd400"></span>Moderate risk</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#12d67d"></span>Safe / clean area</div>
+    <div class="legend-sep"></div>
+    <div class="legend-toggles">
+      <label><input type="checkbox" data-part="zones" checked> Risk areas</label>
+      <label><input type="checkbox" data-part="safe" checked> Safe zones</label>
+      <label><input type="checkbox" data-part="alerts" checked> Live alerts</label>
+      <label><input type="checkbox" data-part="history" checked> Past disasters</label>
+      <label><input type="checkbox" data-part="habitations" checked> Villages</label>
+    </div>
+  </div>
+
+  <!-- ================= TIMELINE ================= -->
+  <div class="windy-timeline">
+    <button class="windy-play-btn" id="timeline-play-btn" title="Play forecast">
+      <span id="play-icon">▶</span>
+    </button>
+    <div class="windy-timeline-steps">
+      <div class="windy-timeline-track"></div>
+      <div class="windy-timeline-progress" id="timeline-progress"></div>
+      <div class="windy-time-node active" data-step="0" data-pct="0"><div class="windy-node-dot"></div><span class="windy-node-text">Now</span></div>
+      <div class="windy-time-node" data-step="1" data-pct="20"><div class="windy-node-dot"></div><span class="windy-node-text">+3h</span></div>
+      <div class="windy-time-node" data-step="2" data-pct="40"><div class="windy-node-dot"></div><span class="windy-node-text">+6h</span></div>
+      <div class="windy-time-node" data-step="3" data-pct="60"><div class="windy-node-dot"></div><span class="windy-node-text" style="color:#ff5a70;">+12h</span></div>
+      <div class="windy-time-node" data-step="4" data-pct="80"><div class="windy-node-dot"></div><span class="windy-node-text">+24h</span></div>
+      <div class="windy-time-node" data-step="5" data-pct="100"><div class="windy-node-dot"></div><span class="windy-node-text">+48h</span></div>
+    </div>
+  </div>
+
+  <!-- ================= INSPECTOR ================= -->
+  <div class="windy-inspector" id="windy-inspector">
+    <div class="windy-inspector-header">
+      <div>
+        <div class="windy-inspector-title" id="insp-name">Surat Coastal Sector</div>
+        <div style="font-size:11px; color:#94a3b8;" id="insp-coords">21.17° N, 72.83° E</div>
+      </div>
+      <button class="windy-inspector-close" id="insp-close">&times;</button>
+    </div>
+    <div class="windy-inspector-grid">
+      <div class="windy-inspector-stat"><div class="windy-stat-lbl">Danger level</div><div class="windy-stat-val" id="insp-risk" style="color:#ff1f3d;">Red Zone</div></div>
+      <div class="windy-inspector-stat"><div class="windy-stat-lbl">Wind gusts</div><div class="windy-stat-val" id="insp-wind">140 km/h</div></div>
+      <div class="windy-inspector-stat"><div class="windy-stat-lbl">Water / surge</div><div class="windy-stat-val" id="insp-surge">2.8 meters</div></div>
+      <div class="windy-inspector-stat"><div class="windy-stat-lbl">Nearest shelter</div><div class="windy-stat-val" id="insp-shelter" style="color:#12d67d;">2.4 km</div></div>
+    </div>
+    <button class="windy-evac-btn" id="insp-evac-btn"><span>🚶</span><span>Show me the way out</span></button>
+  </div>
+
+  <!-- ================= REPORT MODAL ================= -->
+  <div class="modal-overlay" id="report-modal">
+    <div class="modal-box">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px;">📢</span>
+          <div>
+            <h3 style="font-size:16px; font-weight:700; color:#f1f5f9;">Report a local problem</h3>
+            <p style="font-size:11px; color:#94a3b8;">Helps warn neighbours and send help faster</p>
+          </div>
+        </div>
+        <button id="report-close" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="report-form">
+        <div class="form-group">
+          <label class="form-label">What is happening?</label>
+          <select class="input-field" id="rep-type" style="background:#0d1421;">
+            <option value="Flood">🌊 Flood / high water</option>
+            <option value="Cyclone">🌀 Fallen trees / roof damage</option>
+            <option value="Landslide">⛰️ Landslide / blocked road</option>
+            <option value="Cloudburst">⛈️ Sudden heavy rain</option>
+            <option value="Stranded">🆘 People trapped, need rescue</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Where are you?</label>
+          <input type="text" class="input-field" id="rep-loc" value="Surat Coastal Sector (21.17° N, 72.83° E)" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Short description</label>
+          <textarea class="input-field" id="rep-desc" rows="2" placeholder="e.g. Water up to knee level near the bus stand…" required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your phone number</label>
+          <input type="tel" class="input-field" id="rep-phone" placeholder="+91 98765 43210" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="report-submit" style="width:100%; padding:12px; margin-top:8px;">Send report</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase Live Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/firebase-live.js"></script>
+  <script src="js/firebase-modal.js"></script>
+
+  <!-- Core App Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/data.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/hazards.js"></script>
+  <script src="js/citizen.js"></script>
+</body>
+</html>

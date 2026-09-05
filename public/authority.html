@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authority Command Center & Hazard Intelligence | GeoShield</title>
+  <meta name="description" content="Operational Command, Multi-Hazard Predictive Intelligence, Citizen Report Verification, and Evacuation Strategy for Disaster Authorities.">
+
+  <!-- Base & Authority Styles -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/authority.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+</head>
+<body class="authority-page">
+
+  <!-- ============================================================
+       1. SIDEBAR NAVIGATION
+       ============================================================ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🛡️</div>
+      <div class="sidebar-logo-text">
+        <div class="sidebar-logo-name">GeoShield Authority</div>
+        <div class="sidebar-logo-role">Command & Intelligence</div>
+      </div>
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Sidebar">⬅</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Core Command -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Operations</div>
+        
+        <div class="sidebar-item active" data-view="command">
+          <div class="sidebar-item-icon">🎛️</div>
+          <span class="sidebar-item-text">Command Center</span>
+        </div>
+
+        <div class="sidebar-item" data-view="map-view">
+          <div class="sidebar-item-icon">🗺️</div>
+          <span class="sidebar-item-text">Live GIS Risk Map</span>
+        </div>
+
+        <div class="sidebar-item" data-view="hazards">
+          <div class="sidebar-item-icon">🌀</div>
+          <span class="sidebar-item-text">Hazard Intelligence</span>
+          <span class="sidebar-item-badge">5</span>
+        </div>
+      </div>
+
+      <!-- Vulnerability & People -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Zoning & Population</div>
+
+        <div class="sidebar-item" data-view="habitations">
+          <div class="sidebar-item-icon">🏘️</div>
+          <span class="sidebar-item-text">Red Zones & Habitations</span>
+        </div>
+
+        <div class="sidebar-item" data-view="safesites">
+          <div class="sidebar-item-icon">🏕️</div>
+          <span class="sidebar-item-text">Safe Sites & Capacity</span>
+        </div>
+      </div>
+
+      <!-- Action & Verification -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Emergency Response</div>
+
+        <div class="sidebar-item" data-view="alerts">
+          <div class="sidebar-item-icon">📢</div>
+          <span class="sidebar-item-text">Citizen Report Queue</span>
+          <span class="sidebar-item-badge" id="sidebar-queue-badge" style="background:#f97316;">3</span>
+        </div>
+
+        <div class="sidebar-item" data-view="analytics">
+          <div class="sidebar-item-icon">📊</div>
+          <span class="sidebar-item-text">Analytics & Trends</span>
+        </div>
+
+        <div class="sidebar-item" data-view="datasources">
+          <div class="sidebar-item-icon">🛰️</div>
+          <span class="sidebar-item-text">Sensor Data Sources</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar">DR</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">Director R. Mehra</div>
+          <div class="sidebar-user-role">NDRF Incident Commander</div>
+        </div>
+      </div>
+      <div style="margin-top: 10px; display:flex; gap:6px;">
+        <a href="citizen.html" class="btn btn-glass" style="flex:1; padding:6px; font-size:11px; text-decoration:none;">
+          Citizen View ➔
+        </a>
+        <a href="index.html" class="btn btn-glass" style="padding:6px 10px; font-size:11px; text-decoration:none; color:var(--text-muted);" title="Logout">
+          🚪
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       2. MAIN AREA
+       ============================================================ -->
+  <div class="main-area">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-title">
+        <span id="topbar-view-title">Operational Command Center</span>
+        <span class="topbar-subtitle">National Multi-Hazard Situational Picture</span>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Firebase Live Database Indicator -->
+        <button id="firebase-live-badge" onclick="openFirebaseModal()" class="btn btn-glass" style="border: 1px solid rgba(18,214,125,0.4); border-radius: 20px; font-size: 11px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; background: rgba(9,14,25,0.85); color: #12d67d; font-weight:600; white-space:nowrap;" title="Live Firebase Database Status. Click to configure.">
+          <span style="font-size:10px;">🟢</span> <span>Firebase Live</span>
+        </button>
+
+        <div class="topbar-time" id="live-time">Loading IST Time...</div>
+        
+        <button class="topbar-alert-btn" title="Active Regional Alerts" onclick="switchView('alerts')">
+          <span>🔔</span>
+          <span class="alert-dot"></span>
+        </button>
+
+        <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="broadcastEmergencyBroadcast()">
+          📢 Broadcast Regional Alert
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Content Panel -->
+    <main class="content-panel">
+
+      <!-- ========================================================
+           VIEW 1: COMMAND CENTER (Default Overview)
+           ======================================================== -->
+      <section id="view-command">
+        <!-- 8 Core KPIs (Prompt Requirement 10.1) -->
+        <div class="dashboard-kpis">
+          <!-- Active Hazards -->
+          <div class="kpi-card critical">
+            <div class="kpi-icon">🌀</div>
+            <div class="kpi-value">5</div>
+            <div class="kpi-label">Active Monitored Hazards</div>
+            <div class="kpi-trend up">🔴 2 Cat-3 / Flash Level</div>
+          </div>
+
+          <!-- High Risk Habitations -->
+          <div class="kpi-card warning">
+            <div class="kpi-icon">🏘️</div>
+            <div class="kpi-value">24</div>
+            <div class="kpi-label">High-Risk Habitations</div>
+            <div class="kpi-trend up">🟠 4 Under Priority Evacuation</div>
+          </div>
+
+          <!-- Population at Risk -->
+          <div class="kpi-card critical">
+            <div class="kpi-icon">👥</div>
+            <div class="kpi-value">296k</div>
+            <div class="kpi-label">Population at Risk</div>
+            <div class="kpi-trend up">🔴 +14k in coastal buffer</div>
+          </div>
+
+          <!-- Safe Site Capacity -->
+          <div class="kpi-card safe">
+            <div class="kpi-icon">🏕️</div>
+            <div class="kpi-value">26.0k</div>
+            <div class="kpi-label">Safe Shelter Capacity</div>
+            <div class="kpi-trend down">🟢 13,550 Beds Available</div>
+          </div>
+
+          <!-- Immediate Priority Areas -->
+          <div class="kpi-card warning">
+            <div class="kpi-icon">🎯</div>
+            <div class="kpi-value">3</div>
+            <div class="kpi-label">Immediate Priority Sectors</div>
+            <div class="kpi-trend neutral">Surat Coast, Majuli, Chamoli</div>
+          </div>
+
+          <!-- Active Alerts -->
+          <div class="kpi-card critical">
+            <div class="kpi-icon">🚨</div>
+            <div class="kpi-value">5</div>
+            <div class="kpi-label">Active National Alerts</div>
+            <div class="kpi-trend up">IMD + CWC Automated Pushes</div>
+          </div>
+
+          <!-- Overall Composite Risk -->
+          <div class="kpi-card warning">
+            <div class="kpi-icon">⚡</div>
+            <div class="kpi-value">7.8<span style="font-size:16px; font-weight:500; color:var(--text-muted);">/10</span></div>
+            <div class="kpi-label">Overall National Risk Index</div>
+            <div class="kpi-trend up">Elevated due to Monsoon peak</div>
+          </div>
+
+          <!-- AI Model Confidence & False Alarm Rate -->
+          <div class="kpi-card info">
+            <div class="kpi-icon">🧠</div>
+            <div class="kpi-value">94.6%</div>
+            <div class="kpi-label">AI Engine Prediction Confidence</div>
+            <div class="kpi-trend down">🟢 False Alarm Rate &lt; 2.1%</div>
+          </div>
+        </div>
+
+        <!-- Main Dashboard Split: Alert Feed + AI Panel -->
+        <div class="dashboard-main">
+          <!-- Left: Live Incident Feed & Quick Map Preview -->
+          <div class="section-card">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <span>⚡</span>
+                <span>Active Threat & Early Warning Stream</span>
+              </div>
+              <div class="section-card-action" onclick="switchView('hazards')">View Hazard Intel ➔</div>
+            </div>
+            <div class="section-card-body">
+              <div class="alert-feed" id="command-alert-feed"></div>
+            </div>
+          </div>
+
+          <!-- Right Column: AI Explanation Panel (Prompt Requirement 13) -->
+          <div class="dashboard-right">
+            <div class="ai-panel">
+              <div class="ai-panel-header">
+                <div class="ai-indicator">🤖</div>
+                <div>
+                  <div class="ai-panel-title">AI Hazard Explanation Assistant</div>
+                  <div class="ai-panel-sub" id="ai-explanation-sub">Real-Time Operational Assessment</div>
+                </div>
+                <div class="ai-status">
+                  <span class="pulse-dot green" style="width:6px; height:6px;"></span>
+                  <span>Active</span>
+                </div>
+              </div>
+              <div class="ai-panel-body" id="ai-explanation-text">
+                <!-- Injected dynamically via authority.js -->
+              </div>
+              <div style="padding: 0 18px 14px;">
+                <button class="ai-refresh-btn" onclick="updateAIExplanation('command'); showToast('AI Assistant re-queried satellite & radar data', 'info');">
+                  🔄 Re-synthesize Hazard Explanations
+                </button>
+              </div>
+            </div>
+
+            <!-- Threat Confidence Breakdown Card -->
+            <div class="section-card">
+              <div class="section-card-header">
+                <div class="section-card-title">
+                  <span>🛡️</span>
+                  <span>Low False Alarm Cross-Check</span>
+                </div>
+              </div>
+              <div class="section-card-body" style="font-size:12px; color:var(--text-secondary);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                  <span>Multi-Source Agreement:</span>
+                  <strong style="color:#22c55e;">4 of 4 independent sensors</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                  <span>Ground Truth Correlation:</span>
+                  <strong style="color:#38bdf8;">96.2% match rate</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span>Model Uncertainty Margin:</span>
+                  <strong style="color:#f59e0b;">±3.8% variance</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Risk Breakdown Chart (Prompt Requirement 10.1 & 12) -->
+        <div class="section-card" style="margin-top: 16px;">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <span>📊</span>
+              <span>Multi-Risk & Population Exposure Breakdown</span>
+            </div>
+            <div class="section-card-action" onclick="switchView('analytics')">Deep Analytics ➔</div>
+          </div>
+          <div class="section-card-body" style="height: 260px;">
+            <canvas id="riskChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 2: LIVE GIS RISK MAP (Full-Screen within Authority)
+           ======================================================== -->
+      <section id="view-map-view" style="display:none; height:calc(100vh - 108px); position:relative;">
+        <div class="authority-map-wrap" style="height:100%; border-radius:var(--radius-lg); border:1px solid var(--glass-border);">
+          <div id="authority-map"></div>
+          
+          <!-- Threat Detection Live Overlay Box -->
+          <div class="threat-engine">
+            <div class="threat-engine-header">
+              <span>🧠</span>
+              <span class="threat-engine-title">AI Threat Probabilities</span>
+            </div>
+            <div class="threat-engine-body">
+              <div class="threat-item">
+                <span class="threat-name">Cyclone Vayu (Landfall)</span>
+                <span class="threat-prob critical">91%</span>
+              </div>
+              <div class="threat-item">
+                <span class="threat-name">Brahmaputra Inundation</span>
+                <span class="threat-prob critical">95%</span>
+              </div>
+              <div class="threat-item">
+                <span class="threat-name">HP Cloudburst Flash Flood</span>
+                <span class="threat-prob high">81%</span>
+              </div>
+              <div class="threat-item">
+                <span class="threat-name">Chamoli Slope Instability</span>
+                <span class="threat-prob moderate">72%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 3: HAZARD INTELLIGENCE
+           ======================================================== -->
+      <section id="view-hazards" style="display:none;">
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <span>🌀</span>
+              <span>Active Hazard Registry & Early Threat Detection</span>
+            </div>
+            <span class="risk-badge risk-red">5 Active Hazards</span>
+          </div>
+          <div class="section-card-body">
+            <table class="hab-table">
+              <thead>
+                <tr>
+                  <th>Hazard ID</th>
+                  <th>Hazard Type</th>
+                  <th>Title / Cluster</th>
+                  <th>Affected State</th>
+                  <th>Severity Level</th>
+                  <th>AI Confidence</th>
+                  <th>Estimated Arrival (ETA)</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="hazard-table-body">
+                <tr>
+                  <td><code>HAZ001</code></td>
+                  <td>🌀 Cyclone</td>
+                  <td><strong>Cyclone Vayu</strong></td>
+                  <td>Gujarat</td>
+                  <td><span class="risk-badge risk-red">CRITICAL</span></td>
+                  <td><strong style="color:#38bdf8;">87%</strong></td>
+                  <td>18 hours</td>
+                  <td><button class="btn btn-glass" style="padding:4px 10px; font-size:11px;" onclick="switchView('map-view')">Locate GIS</button></td>
+                </tr>
+                <tr>
+                  <td><code>HAZ002</code></td>
+                  <td>🌊 Flood</td>
+                  <td><strong>Brahmaputra Flood</strong></td>
+                  <td>Assam</td>
+                  <td><span class="risk-badge risk-red">CRITICAL</span></td>
+                  <td><strong style="color:#38bdf8;">95%</strong></td>
+                  <td>Active</td>
+                  <td><button class="btn btn-glass" style="padding:4px 10px; font-size:11px;" onclick="switchView('map-view')">Locate GIS</button></td>
+                </tr>
+                <tr>
+                  <td><code>HAZ003</code></td>
+                  <td>⛰️ Landslide</td>
+                  <td><strong>Landslide Alert</strong></td>
+                  <td>Uttarakhand</td>
+                  <td><span class="risk-badge risk-yellow">MODERATE</span></td>
+                  <td><strong style="color:#38bdf8;">72%</strong></td>
+                  <td>6 hours</td>
+                  <td><button class="btn btn-glass" style="padding:4px 10px; font-size:11px;" onclick="switchView('map-view')">Locate GIS</button></td>
+                </tr>
+                <tr>
+                  <td><code>HAZ004</code></td>
+                  <td>📳 Earthquake</td>
+                  <td><strong>Seismic Tremors</strong></td>
+                  <td>Manipur</td>
+                  <td><span class="risk-badge risk-yellow">MODERATE</span></td>
+                  <td><strong style="color:#38bdf8;">68%</strong></td>
+                  <td>Active</td>
+                  <td><button class="btn btn-glass" style="padding:4px 10px; font-size:11px;" onclick="switchView('map-view')">Locate GIS</button></td>
+                </tr>
+                <tr>
+                  <td><code>HAZ005</code></td>
+                  <td>⛈️ Cloudburst</td>
+                  <td><strong>Cloudburst Warning</strong></td>
+                  <td>Himachal Pradesh</td>
+                  <td><span class="risk-badge risk-orange">HIGH</span></td>
+                  <td><strong style="color:#38bdf8;">81%</strong></td>
+                  <td>3 hours</td>
+                  <td><button class="btn btn-glass" style="padding:4px 10px; font-size:11px;" onclick="switchView('map-view')">Locate GIS</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 4: RED ZONES & HABITATIONS (Prompt Requirement 10 & 11)
+           ======================================================== -->
+      <section id="view-habitations" style="display:none;">
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <span>🏘️</span>
+              <span>High-Risk Habitations & Relocation Priority Ranking</span>
+            </div>
+            <button class="btn btn-primary" style="padding:6px 14px; font-size:12px;" onclick="showToast('Evacuation dispatch orders dispatched to district teams', 'success')">
+              Execute Priority Evacuation
+            </button>
+          </div>
+          <div class="section-card-body">
+            <table class="hab-table">
+              <thead>
+                <tr>
+                  <th>Habitation</th>
+                  <th>District / State</th>
+                  <th>Population</th>
+                  <th>Dominant Hazard</th>
+                  <th>Risk Classification</th>
+                  <th>Evacuation Status</th>
+                  <th>Assigned Safe Site</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Olpad</strong></td>
+                  <td>Surat, Gujarat</td>
+                  <td>18,200</td>
+                  <td>Cyclone & Surge</td>
+                  <td><span class="risk-badge risk-red">RED ZONE</span></td>
+                  <td><span style="color:#f59e0b; font-weight:600;">In Progress (42%)</span></td>
+                  <td>Surat Relief Camp A</td>
+                </tr>
+                <tr>
+                  <td><strong>Hazira</strong></td>
+                  <td>Surat, Gujarat</td>
+                  <td>22,000</td>
+                  <td>Storm Surge</td>
+                  <td><span class="risk-badge risk-red">RED ZONE</span></td>
+                  <td><span style="color:#22c55e; font-weight:600;">Completed (94%)</span></td>
+                  <td>Surat School Shelter</td>
+                </tr>
+                <tr>
+                  <td><strong>Majuli</strong></td>
+                  <td>Majuli, Assam</td>
+                  <td>16,700</td>
+                  <td>River Inundation</td>
+                  <td><span class="risk-badge risk-red">RED ZONE</span></td>
+                  <td><span style="color:#ef4444; font-weight:600;">Pending Access</span></td>
+                  <td>Guwahati Hub</td>
+                </tr>
+                <tr>
+                  <td><strong>Joshimath</strong></td>
+                  <td>Chamoli, Uttarakhand</td>
+                  <td>4,200</td>
+                  <td>Landslide Subsidence</td>
+                  <td><span class="risk-badge risk-orange">ORANGE ZONE</span></td>
+                  <td><span style="color:#f59e0b; font-weight:600;">Pre-Alert</span></td>
+                  <td>Chamoli Safe Zone</td>
+                </tr>
+                <tr>
+                  <td><strong>Ukhrul</strong></td>
+                  <td>Ukhrul, Manipur</td>
+                  <td>5,800</td>
+                  <td>Seismic Cracking</td>
+                  <td><span class="risk-badge risk-orange">ORANGE ZONE</span></td>
+                  <td><span style="color:#94a3b8;">Monitoring</span></td>
+                  <td>Imphal Central</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 5: SAFE SITES & CARRYING CAPACITY (Prompt Requirement 10.1 & 11)
+           ======================================================== -->
+      <section id="view-safesites" style="display:none;">
+        <div class="section-card" style="margin-bottom:16px;">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <span>🏕️</span>
+              <span>Designated Evacuation Shelters & Carrying Capacity</span>
+            </div>
+            <span style="font-size:12px; color:#22c55e; font-weight:600;">Total Safe Capacity: 26,000 | Occupancy: 48%</span>
+          </div>
+          <div class="section-card-body">
+            <div class="safe-sites-grid">
+              <div class="safe-site-card">
+                <div class="safe-site-name">Surat Relief Camp A (Surat)</div>
+                <div class="safe-site-cap">Capacity: 5,000 | Current: 1,240 (25% Occupancy)</div>
+                <div class="capacity-bar"><div class="capacity-fill" style="width:25%; background:#22c55e;"></div></div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">Amenities: Medical, Food, Water, Emergency Power</div>
+              </div>
+
+              <div class="safe-site-card">
+                <div class="safe-site-name">Guwahati Evacuation Hub (Kamrup)</div>
+                <div class="safe-site-cap">Capacity: 8,000 | Current: 6,200 (77% Occupancy)</div>
+                <div class="capacity-bar"><div class="capacity-fill" style="width:77%; background:#f97316;"></div></div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">Amenities: Helipad, Trauma Unit, High Water Stores</div>
+              </div>
+
+              <div class="safe-site-card">
+                <div class="safe-site-name">Surat School Shelter (Surat)</div>
+                <div class="safe-site-cap">Capacity: 2,000 | Current: 890 (44% Occupancy)</div>
+                <div class="capacity-bar"><div class="capacity-fill" style="width:44%; background:#22c55e;"></div></div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">Amenities: Food, Clean Water, Sanitation</div>
+              </div>
+
+              <div class="safe-site-card">
+                <div class="safe-site-name">Jorhat Relief Center (Jorhat)</div>
+                <div class="safe-site-cap">Capacity: 3,000 | Current: 2,100 (70% Occupancy)</div>
+                <div class="capacity-bar"><div class="capacity-fill" style="width:70%; background:#eab308;"></div></div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:8px;">Amenities: Food, Water, Medical First Aid</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 6: CITIZEN REPORTS & VERIFICATION QUEUE (Prompt 16 & 17)
+           ======================================================== -->
+      <section id="view-alerts" style="display:none;">
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <span>📋</span>
+              <span>Citizen Disaster Reporting — Human / Officer Verification Queue</span>
+            </div>
+            <span style="font-size:12px; color:var(--text-secondary);">Crowdsourced Field Intelligence with AI Pre-check</span>
+          </div>
+          <div class="section-card-body">
+            <div class="report-queue" id="verification-queue">
+              <!-- Rendered via reports.js -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 7: ANALYTICS (Prompt Requirement 12)
+           ======================================================== -->
+      <section id="view-analytics" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Historical Events Table -->
+          <div class="section-card">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <span>📜</span>
+                <span>Historical Disaster Benchmarks</span>
+              </div>
+            </div>
+            <div class="section-card-body">
+              <table class="hab-table">
+                <thead><tr><th>Year</th><th>Event</th><th>Type</th><th>Affected Pop</th></tr></thead>
+                <tbody>
+                  <tr><td>2023</td><td>Cyclone Biparjoy</td><td>Cyclone</td><td>120,000</td></tr>
+                  <tr><td>2022</td><td>Assam Floods</td><td>Flood</td><td>5,800,000</td></tr>
+                  <tr><td>2021</td><td>Chamoli Disaster</td><td>Landslide</td><td>200</td></tr>
+                  <tr><td>2020</td><td>Cyclone Amphan</td><td>Cyclone</td><td>4,900,000</td></tr>
+                  <tr><td>2019</td><td>Kerala Floods</td><td>Flood</td><td>2,100,000</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Contribution Analysis -->
+          <div class="section-card">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <span>🔬</span>
+                <span>Risk Contribution & Driver Analysis</span>
+              </div>
+            </div>
+            <div class="section-card-body" style="font-size:13px;">
+              <div style="margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span>Excess Precipitation Anomaly (Rainfall)</span>
+                  <strong style="color:#ef4444;">64%</strong>
+                </div>
+                <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px;"><div style="width:64%; height:100%; background:#ef4444; border-radius:3px;"></div></div>
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span>Gale Wind & Low Central Pressure</span>
+                  <strong style="color:#f97316;">26%</strong>
+                </div>
+                <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px;"><div style="width:26%; height:100%; background:#f97316; border-radius:3px;"></div></div>
+              </div>
+
+              <div style="margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span>Topographic Slope Instability</span>
+                  <strong style="color:#eab308;">7%</strong>
+                </div>
+                <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px;"><div style="width:7%; height:100%; background:#eab308; border-radius:3px;"></div></div>
+              </div>
+
+              <div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span>Infrastructure Bottlenecks</span>
+                  <strong style="color:#38bdf8;">3%</strong>
+                </div>
+                <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px;"><div style="width:3%; height:100%; background:#38bdf8; border-radius:3px;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           VIEW 8: DATA SOURCES
+           ======================================================== -->
+      <section id="view-datasources" style="display:none;">
+        <div class="section-card">
+          <div class="section-card-header">
+            <div class="section-card-title">
+              <span>📡</span>
+              <span>Integrated Multi-Agency Telemetry & Satellite Feeds</span>
+            </div>
+            <span class="risk-badge risk-green">All Systems Operational</span>
+          </div>
+          <div class="section-card-body">
+            <table class="hab-table">
+              <thead><tr><th>Source Agency</th><th>Data Type</th><th>Sampling Rate</th><th>Latency</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><strong>IMD (Indian Meteorological Dept)</strong></td><td>Doppler Weather Radar, Cyclone Track</td><td>10 minutes</td><td>1.2s</td><td><span style="color:#22c55e;">Live Active</span></td></tr>
+                <tr><td><strong>ISRO Bhuvan / INSAT-3DR</strong></td><td>Multispectral Satellite Thermal Scan</td><td>30 minutes</td><td>4.5s</td><td><span style="color:#22c55e;">Live Active</span></td></tr>
+                <tr><td><strong>CWC (Central Water Commission)</strong></td><td>River Gauge Levels & Inundation</td><td>15 minutes</td><td>2.1s</td><td><span style="color:#22c55e;">Live Active</span></td></tr>
+                <tr><td><strong>GSI (Geological Survey of India)</strong></td><td>Slope Stability & Landslide Sensors</td><td>1 hour</td><td>8.0s</td><td><span style="color:#22c55e;">Live Active</span></td></tr>
+                <tr><td><strong>Citizen Telemetry Mesh</strong></td><td>Crowdsourced Reports with Geo-tagging</td><td>Real-time</td><td>&lt; 500ms</td><td><span style="color:#22c55e;">Live Active</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Firebase Live Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/firebase-live.js"></script>
+  <script src="js/firebase-modal.js"></script>
+
+  <!-- Core App Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/data.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/alerts.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/authority.js"></script>
+  <script>
+    async function broadcastEmergencyBroadcast() {
+      const msg = prompt("Enter Emergency Broadcast Message to push to all citizens in real time:", "IMMEDIATE EVACUATION NOTICE: Move to designated relief shelters immediately via primary corridors.");
+      if (msg && msg.trim()) {
+        if (window.firebaseLive) {
+          await window.firebaseLive.broadcastEmergencyAlert({
+            level: 'CRITICAL',
+            type: 'Authority Emergency Broadcast',
+            title: '🚨 CRITICAL REGIONAL EMERGENCY BROADCAST',
+            message: msg.trim(),
+            area: 'National Priority Sectors / All Connected Citizens',
+            sources: ['NDRF Incident Command', 'IMD Doppler Radar Telemetry']
+          });
+        }
+        showToast("🚨 Regional Emergency Alert broadcast pushed live to all citizen devices via Firebase!", "danger");
+      }
+    }
+  </script>
+</body>
+</html>

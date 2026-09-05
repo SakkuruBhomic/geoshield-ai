@@ -1,8 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "outputDirectory": "public/app",
+  "outputDirectory": "public",
   "framework": null,
+  "redirects": [
+    {
+      "source": "/app",
+      "destination": "/app/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/",
@@ -17,12 +24,16 @@
       "destination": "/authority.html"
     },
     {
-      "source": "/app",
-      "destination": "/index.html"
+      "source": "/app/",
+      "destination": "/app/index.html"
     },
     {
-      "source": "/app/(.*)",
-      "destination": "/$1"
+      "source": "/app/citizen",
+      "destination": "/app/citizen.html"
+    },
+    {
+      "source": "/app/authority",
+      "destination": "/app/authority.html"
     }
   ],
   "headers": [
@@ -32,19 +43,20 @@
         {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
         }
       ]
     },
     {
-      "source": "/(css|js)/(.*)",
+      "source": "/css/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/app/css/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
