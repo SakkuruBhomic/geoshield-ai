@@ -1,26 +1,28 @@
 // ================================================================
-// FIREBASE-LIVE.JS — Live Realtime Database & Multi-device Mesh Sync
+// FIREBASE-LIVE.JS — Unified Realtime Cloud Service (Supabase & Firebase)
 // ================================================================
 
-class FirebaseLiveService {
+class LiveBackendService {
   constructor() {
-    this.db = null;
+    this.backendType = getBackendType();
+    this.sbClient = null;
+    this.fbDb = null;
     this.isCloudConnected = false;
-    this.connectionMode = 'initializing'; // 'cloud', 'mesh', 'offline'
+    this.connectionMode = 'initializing';
     this.meshChannel = null;
+
     this.reportListeners = [];
     this.alertListeners = [];
     this.statusListeners = [];
 
-    // Local cached state (pre-populated from APP_DATA when available)
     this.reports = [];
     this.alerts = [];
 
     this.initMeshChannel();
-    this.initFirebase();
+    this.initCloudBackend();
   }
 
-  // ---- Cross-tab BroadcastChannel & Local Storage Sync ----
+  // ---- Cross-tab BroadcastChannel & Local Cache Sync ----
   initMeshChannel() {
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -30,10 +32,9 @@ class FirebaseLiveService {
         };
       }
     } catch (e) {
-      console.warn('BroadcastChannel not supported:', e);
+      console.warn('BroadcastChannel notice:', e);
     }
 
-    // Load initial offline/mesh reports and alerts from localStorage if present
     try {
       const storedReports = localStorage.getItem('geoshield_synced_reports');
       if (storedReports) {
@@ -49,7 +50,7 @@ class FirebaseLiveService {
         this.alerts = JSON.parse(JSON.stringify(APP_DATA.alerts));
       }
     } catch (e) {
-      console.warn('Error loading cached disaster data:', e);
+      console.warn('Cache notice:', e);
     }
   }
 
@@ -80,94 +81,149 @@ class FirebaseLiveService {
     }
   }
 
-  // ---- Firebase Cloud Firestore Initialization ----
-  initFirebase() {
-    const config = getFirebaseConfig();
+  // ---- Initialize Backend: Supabase or Firebase ----
+  async initCloudBackend() {
+    this.backendType = getBackendType();
 
-    if (typeof firebase === 'undefined') {
-      console.warn('Firebase SDK not loaded, falling back to Realtime Mesh Channel.');
-      this.setConnectionStatus('mesh', 'Local Realtime Mesh Active');
-      return;
+    // 1. Check Supabase
+    if (this.backendType === 'supabase' && typeof window.supabase !== 'undefined') {
+      const sbConfig = getSupabaseConfig();
+      if (sbConfig.isCustom) {
+        try {
+          this.sbClient = window.supabase.createClient(sbConfig.url, sbConfig.key);
+          await this.attachSupabaseListeners();
+          return;
+        } catch (err) {
+          console.warn('Supabase initialization notice:', err.message);
+        }
+      }
     }
 
-    try {
-      // Check if default app is already initialized
-      let app;
-      if (!firebase.apps.length) {
-        app = firebase.initializeApp(config);
-      } else {
-        app = firebase.app();
+    // 2. Check Firebase
+    if (typeof firebase !== 'undefined') {
+      const fbConfig = getFirebaseConfig();
+      if (fbConfig.isCustom) {
+        try {
+          let app = !firebase.apps.length ? firebase.initializeApp(fbConfig) : firebase.app();
+          this.fbDb = firebase.firestore();
+          this.attachFirebaseListeners(fbConfig);
+          return;
+        } catch (err) {
+          console.warn('Firebase initialization notice:', err.message);
+        }
       }
-
-      this.db = firebase.firestore();
-
-      // Enable offline persistence in Firestore if possible
-      try {
-        this.db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-          if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-            console.warn('Firestore persistence warning:', err);
-          }
-        });
-      } catch (err) {
-        // ignore multiple tab error
-      }
-
-      // Attach real-time cloud listeners
-      this.attachCloudListeners(config);
-    } catch (error) {
-      console.warn('Firebase initialization notice:', error.message);
-      this.setConnectionStatus('mesh', 'Local Mesh Active (Add Firebase Keys)');
     }
+
+    // 3. Fallback to Local Realtime Mesh
+    this.setConnectionStatus('mesh', 'Realtime Mesh Sync (Connect Backend in Settings)');
   }
 
-  attachCloudListeners(config) {
-    if (!this.db) return;
+  // ---- Supabase Integration ----
+  async attachSupabaseListeners() {
+    if (!this.sbClient) return;
 
-    // Listen to Citizen Reports collection
-    this.db.collection('citizen_reports')
+    // Fetch existing reports
+    const { data: initialReports, error: repErr } = await this.sbClient
+      .from('citizen_reports')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(50);
+
+    if (!repErr && initialReports && initialReports.length > 0) {
+      this.reports = initialReports;
+      this.persistLocalCache();
+      this.notifyReportListeners(this.reports);
+    }
+
+    // Fetch existing alerts
+    const { data: initialAlerts, error: altErr } = await this.sbClient
+      .from('emergency_alerts')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(30);
+
+    if (!altErr && initialAlerts && initialAlerts.length > 0) {
+      this.alerts = initialAlerts;
+      this.persistLocalCache();
+      this.notifyAlertListeners(this.alerts);
+    }
+
+    // Subscribe to Postgres Realtime Changes
+    this.sbClient
+      .channel('geoshield_realtime_channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'citizen_reports' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const exists = this.reports.some(r => r.id === payload.new.id);
+          if (!exists) {
+            this.reports.unshift(payload.new);
+            this.persistLocalCache();
+            this.notifyReportListeners(this.reports, { added: payload.new });
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const idx = this.reports.findIndex(r => r.id === payload.new.id);
+          if (idx !== -1) {
+            this.reports[idx] = { ...this.reports[idx], ...payload.new };
+            this.persistLocalCache();
+            this.notifyReportListeners(this.reports, { updated: payload.new });
+          }
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'emergency_alerts' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const exists = this.alerts.some(a => a.id === payload.new.id);
+          if (!exists) {
+            this.alerts.unshift(payload.new);
+            this.persistLocalCache();
+            this.notifyAlertListeners(this.alerts, { added: payload.new });
+          }
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          this.isCloudConnected = true;
+          this.setConnectionStatus('cloud', 'Live Supabase Realtime Connected');
+        }
+      });
+  }
+
+  // ---- Firebase Integration ----
+  attachFirebaseListeners(fbConfig) {
+    if (!this.fbDb) return;
+
+    this.fbDb.collection('citizen_reports')
       .orderBy('timestamp', 'desc')
       .limit(50)
       .onSnapshot((snapshot) => {
         this.isCloudConnected = true;
-        this.setConnectionStatus('cloud', `Live Cloud Firestore (${config.projectId})`);
+        this.setConnectionStatus('cloud', `Live Cloud Firestore (${fbConfig.projectId})`);
 
         if (!snapshot.empty) {
           const cloudReports = [];
           snapshot.forEach(doc => {
-            const data = doc.data();
-            cloudReports.push({ id: doc.id, ...data });
+            cloudReports.push({ id: doc.id, ...doc.data() });
           });
           this.reports = cloudReports;
           this.persistLocalCache();
           this.notifyReportListeners(this.reports);
-        } else {
-          // If collection is empty and custom config is active, seed once
-          if (config.isCustom && this.reports.length > 0) {
-            this.seedCloudReports();
-          }
         }
       }, (error) => {
-        console.warn('Firestore reports listener notice (using mesh sync):', error.message);
-        this.setConnectionStatus('mesh', 'Realtime Mesh Sync (Live)');
+        console.warn('Firestore notice:', error.message);
+        this.setConnectionStatus('mesh', 'Realtime Mesh Sync Active');
       });
 
-    // Listen to Emergency Alerts collection
-    this.db.collection('emergency_alerts')
+    this.fbDb.collection('emergency_alerts')
       .orderBy('timestamp', 'desc')
       .limit(30)
       .onSnapshot((snapshot) => {
         if (!snapshot.empty) {
           const cloudAlerts = [];
           snapshot.forEach(doc => {
-            const data = doc.data();
-            cloudAlerts.push({ id: doc.id, ...data });
+            cloudAlerts.push({ id: doc.id, ...doc.data() });
           });
           this.alerts = cloudAlerts;
           this.persistLocalCache();
           this.notifyAlertListeners(this.alerts);
         }
-      }, (error) => {
-        console.warn('Firestore alerts listener notice:', error.message);
       });
   }
 
@@ -183,44 +239,34 @@ class FirebaseLiveService {
     } catch (e) {}
   }
 
-  // ---- Public Event Subscription Methods ----
   onReports(callback) {
     this.reportListeners.push(callback);
-    // Trigger immediately with current state
-    if (this.reports.length > 0) {
-      callback(this.reports);
-    }
+    if (this.reports.length > 0) callback(this.reports);
   }
 
   onAlerts(callback) {
     this.alertListeners.push(callback);
-    if (this.alerts.length > 0) {
-      callback(this.alerts);
-    }
+    if (this.alerts.length > 0) callback(this.alerts);
   }
 
   onStatus(callback) {
     this.statusListeners.push(callback);
-    callback(this.connectionMode, this.isCloudConnected ? 'Live Cloud Firestore Connected' : 'Local Realtime Mesh Active');
+    callback(this.connectionMode, this.isCloudConnected ? 'Live Cloud Backend Connected' : 'Local Realtime Mesh Active');
   }
 
   notifyReportListeners(reports, meta) {
     this.reportListeners.forEach(fn => {
-      try { fn(reports, meta); } catch (e) { console.error('Error in report listener:', e); }
+      try { fn(reports, meta); } catch (e) {}
     });
   }
 
   notifyAlertListeners(alerts, meta) {
     this.alertListeners.forEach(fn => {
-      try { fn(alerts, meta); } catch (e) { console.error('Error in alert listener:', e); }
+      try { fn(alerts, meta); } catch (e) {}
     });
   }
 
-  // ---- Write Operations (Citizen & Authority) ----
-
-  /**
-   * Submit a new citizen incident report (e.g. from citizen.html)
-   */
+  // ---- Submit Citizen Report ----
   async submitCitizenReport(reportData) {
     const id = 'REP-' + Date.now().toString().slice(-6);
     const fullReport = {
@@ -239,7 +285,6 @@ class FirebaseLiveService {
       upvotes: 1
     };
 
-    // 1. Update local cache & broadcast via mesh
     this.reports.unshift(fullReport);
     this.persistLocalCache();
     this.notifyReportListeners(this.reports, { added: fullReport });
@@ -248,21 +293,28 @@ class FirebaseLiveService {
       this.meshChannel.postMessage({ type: 'NEW_REPORT', payload: fullReport });
     }
 
-    // 2. Write to Firebase Cloud Firestore if available
-    if (this.db) {
+    // Write to Supabase if connected
+    if (this.sbClient) {
       try {
-        await this.db.collection('citizen_reports').doc(id).set(fullReport);
+        await this.sbClient.from('citizen_reports').insert([fullReport]);
       } catch (err) {
-        console.warn('Saved report to mesh sync (Firestore cloud write pending):', err.message);
+        console.warn('Supabase insert notice:', err.message);
+      }
+    }
+
+    // Write to Firebase if connected
+    if (this.fbDb) {
+      try {
+        await this.fbDb.collection('citizen_reports').doc(id).set(fullReport);
+      } catch (err) {
+        console.warn('Firebase insert notice:', err.message);
       }
     }
 
     return fullReport;
   }
 
-  /**
-   * Authority verifies a report
-   */
+  // ---- Authority Verifies Report ----
   async verifyReport(reportId, officerNotes = '') {
     const report = this.reports.find(r => r.id === reportId);
     if (!report) return null;
@@ -270,7 +322,8 @@ class FirebaseLiveService {
     const updates = {
       id: reportId,
       status: 'Verified',
-      officerNotes: officerNotes || 'Confirmed via GIS telemetry and Sentinel-2 satellite anomaly.',
+      officer_notes: officerNotes || 'Confirmed via GIS telemetry and Sentinel-2 anomaly.',
+      officerNotes: officerNotes || 'Confirmed via GIS telemetry and Sentinel-2 anomaly.',
       verifiedAt: new Date().toLocaleTimeString(),
       verifiedTimestamp: Date.now()
     };
@@ -283,16 +336,19 @@ class FirebaseLiveService {
       this.meshChannel.postMessage({ type: 'UPDATE_REPORT', payload: updates });
     }
 
-    // Write to Firestore
-    if (this.db) {
+    if (this.sbClient) {
       try {
-        await this.db.collection('citizen_reports').doc(reportId).set(updates, { merge: true });
-      } catch (err) {
-        console.warn('Firestore report verify update notice:', err.message);
-      }
+        await this.sbClient.from('citizen_reports').update({ status: 'Verified', officer_notes: updates.officer_notes }).eq('id', reportId);
+      } catch (err) {}
     }
 
-    // Automatically generate and broadcast regional emergency alert
+    if (this.fbDb) {
+      try {
+        await this.fbDb.collection('citizen_reports').doc(reportId).set(updates, { merge: true });
+      } catch (err) {}
+    }
+
+    // Generate Emergency Alert
     const newAlert = {
       id: 'ALT-' + Date.now().toString().slice(-4),
       level: report.severity === 'Critical' ? 'CRITICAL' : 'HIGH',
@@ -303,7 +359,7 @@ class FirebaseLiveService {
       timestamp: Date.now(),
       area: `Vicinity coordinates [${report.lat.toFixed(2)}, ${report.lng.toFixed(2)}]`,
       confidence: 96,
-      sources: ['Citizen Verified', 'NDRF Dispatch', 'Satellite Radar Cross-check'],
+      sources: ['Citizen Verified', 'NDRF Dispatch', 'Satellite Radar'],
       active: true
     };
 
@@ -311,9 +367,7 @@ class FirebaseLiveService {
     return report;
   }
 
-  /**
-   * Authority rejects/dismisses a report
-   */
+  // ---- Authority Dismisses Report ----
   async rejectReport(reportId, reason = '') {
     const report = this.reports.find(r => r.id === reportId);
     if (!report) return null;
@@ -333,20 +387,22 @@ class FirebaseLiveService {
       this.meshChannel.postMessage({ type: 'UPDATE_REPORT', payload: updates });
     }
 
-    if (this.db) {
+    if (this.sbClient) {
       try {
-        await this.db.collection('citizen_reports').doc(reportId).set(updates, { merge: true });
-      } catch (err) {
-        console.warn('Firestore reject update notice:', err.message);
-      }
+        await this.sbClient.from('citizen_reports').update({ status: 'Rejected' }).eq('id', reportId);
+      } catch (err) {}
+    }
+
+    if (this.fbDb) {
+      try {
+        await this.fbDb.collection('citizen_reports').doc(reportId).set(updates, { merge: true });
+      } catch (err) {}
     }
 
     return report;
   }
 
-  /**
-   * Push a regional Emergency Alert (triggers instant warning across citizen devices)
-   */
+  // ---- Broadcast Emergency Alert ----
   async broadcastEmergencyAlert(alertData) {
     const alertId = alertData.id || ('ALT-' + Date.now().toString().slice(-4));
     const fullAlert = {
@@ -371,49 +427,51 @@ class FirebaseLiveService {
       this.meshChannel.postMessage({ type: 'NEW_ALERT', payload: fullAlert });
     }
 
-    if (this.db) {
+    if (this.sbClient) {
       try {
-        await this.db.collection('emergency_alerts').doc(alertId).set(fullAlert);
-      } catch (err) {
-        console.warn('Firestore emergency alert broadcast notice:', err.message);
-      }
+        await this.sbClient.from('emergency_alerts').insert([fullAlert]);
+      } catch (err) {}
+    }
+
+    if (this.fbDb) {
+      try {
+        await this.fbDb.collection('emergency_alerts').doc(alertId).set(fullAlert);
+      } catch (err) {}
     }
 
     return fullAlert;
   }
 
-  /**
-   * Seeds default Indian disaster scenarios into Cloud Firestore
-   */
+  // ---- Seed Data ----
   async seedCloudReports() {
-    if (!this.db) return;
-    try {
-      const batch = this.db.batch();
-      const initialReports = (typeof APP_DATA !== 'undefined' && APP_DATA.citizenReports)
-        ? APP_DATA.citizenReports
-        : [];
+    const initialReports = (typeof APP_DATA !== 'undefined' && APP_DATA.citizenReports)
+      ? APP_DATA.citizenReports
+      : [];
 
-      initialReports.forEach(rep => {
-        const docRef = this.db.collection('citizen_reports').doc(rep.id);
-        batch.set(docRef, { ...rep, timestamp: Date.now() - (Math.random() * 3600000) }, { merge: true });
-      });
+    const initialAlerts = (typeof APP_DATA !== 'undefined' && APP_DATA.alerts)
+      ? APP_DATA.alerts
+      : [];
 
-      const initialAlerts = (typeof APP_DATA !== 'undefined' && APP_DATA.alerts)
-        ? APP_DATA.alerts
-        : [];
+    if (this.sbClient) {
+      try {
+        await this.sbClient.from('citizen_reports').upsert(initialReports);
+        await this.sbClient.from('emergency_alerts').upsert(initialAlerts);
+        console.log('Seeded Supabase database.');
+      } catch (e) {}
+    }
 
-      initialAlerts.forEach(alt => {
-        const docRef = this.db.collection('emergency_alerts').doc(alt.id);
-        batch.set(docRef, { ...alt, timestamp: Date.now() - (Math.random() * 1800000) }, { merge: true });
-      });
-
-      await batch.commit();
-      console.log('Successfully seeded initial disaster datasets to Cloud Firestore.');
-    } catch (e) {
-      console.warn('Could not seed cloud reports:', e.message);
+    if (this.fbDb) {
+      try {
+        const batch = this.fbDb.batch();
+        initialReports.forEach(rep => {
+          const ref = this.fbDb.collection('citizen_reports').doc(rep.id);
+          batch.set(ref, { ...rep, timestamp: Date.now() }, { merge: true });
+        });
+        await batch.commit();
+      } catch (e) {}
     }
   }
 }
 
 // Global Singleton Instance
-window.firebaseLive = new FirebaseLiveService();
+window.firebaseLive = new LiveBackendService();
